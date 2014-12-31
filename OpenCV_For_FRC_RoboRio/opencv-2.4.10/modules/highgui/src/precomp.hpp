@@ -111,7 +111,7 @@ struct CvVideoWriter
     virtual bool writeFrame(const IplImage*) { return false; }
 };
 
-CvCapture * cvCreateCameraCapture_V4L( int index );
+CvCapture * cvCreateCameraCapture_V4L( int index, int width=-1, int height=-1, double fps=-1);
 CvCapture * cvCreateCameraCapture_DC1394( int index );
 CvCapture * cvCreateCameraCapture_DC1394_2( int index );
 CvCapture* cvCreateCameraCapture_MIL( int index );

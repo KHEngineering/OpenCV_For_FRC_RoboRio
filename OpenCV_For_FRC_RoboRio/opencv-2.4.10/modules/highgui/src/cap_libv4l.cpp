@@ -251,6 +251,7 @@ make & enjoy!
 
 #include <libv4l1.h>
 #include <libv4l2.h>
+#include <iostream>
 
 /* Defaults - If your board can do better, set it here.  Set for the most common type inputs. */
 #define DEFAULT_V4L_WIDTH  640
@@ -1426,26 +1427,26 @@ static int icvSetVideoSize( CvCaptureCAM_V4L* capture, int w, int h) {
     xioctl (capture->deviceHandle, VIDIOC_S_FMT, &capture->form);
 
     /* try to set framerate to 30 fps */
-    struct v4l2_streamparm setfps;
-    memset (&setfps, 0, sizeof(struct v4l2_streamparm));
-    setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    setfps.parm.capture.timeperframe.numerator = 1;
-    setfps.parm.capture.timeperframe.denominator = 30;
-    xioctl (capture->deviceHandle, VIDIOC_S_PARM, &setfps);
+   // struct v4l2_streamparm setfps;
+   // memset (&setfps, 0, sizeof(struct v4l2_streamparm));
+   // setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   // setfps.parm.capture.timeperframe.numerator = 1;
+   // setfps.parm.capture.timeperframe.denominator = 30;
+   // xioctl (capture->deviceHandle, VIDIOC_S_PARM, &setfps);
 
     /* we need to re-initialize some things, like buffers, because the size has
      * changed */
-    capture->FirstCapture = 1;
+    //capture->FirstCapture = 1;
 
     /* Get window info again, to get the real value */
-    if (-1 == xioctl (capture->deviceHandle, VIDIOC_G_FMT, &capture->form))
-    {
-      fprintf(stderr, "HIGHGUI ERROR: V4L/V4L2: Could not obtain specifics of capture window.\n\n");
+    //if (-1 == xioctl (capture->deviceHandle, VIDIOC_G_FMT, &capture->form))
+   // {
+    //  fprintf(stderr, "HIGHGUI ERROR: V4L/V4L2: Could not obtain specifics of capture window.\n\n");
 
-      icvCloseCAM_V4L(capture);
+    //  icvCloseCAM_V4L(capture);
 
-      return 0;
-    }
+//      return 0;
+ //   }
 
     return 0;
 

@@ -318,7 +318,7 @@ enum
 };
 
 /* start capturing frames from camera: index = camera_index + domain_offset (CV_CAP_*) */
-CVAPI(CvCapture*) cvCreateCameraCapture( int index );
+CVAPI(CvCapture*) cvCreateCameraCapture(int index, int width=-1, int height=-1, double fps=-1);
 
 /* grab a frame, return 1 on success, 0 on fail.
   this function is thought to be fast               */
@@ -385,6 +385,9 @@ enum
     CV_CAP_PROP_ROLL          =35,
     CV_CAP_PROP_IRIS          =36,
     CV_CAP_PROP_SETTINGS      =37,
+    CV_CAP_PROP_DEVICE_HANDLE =38,
+    CV_CAP_PROP_EXPOSURE_ABSOLUTE = 39,
+    CV_CAP_PROP_EXPOSURE_AUTO =40,	
 
     CV_CAP_PROP_AUTOGRAB      =1024, // property for highgui class CvCapture_Android only
     CV_CAP_PROP_SUPPORTED_PREVIEW_SIZES_STRING=1025, // readonly, tricky property, returns cpnst char* indeed

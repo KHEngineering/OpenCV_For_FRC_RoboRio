@@ -173,7 +173,7 @@ make & enjoy!
 //  By downloading, copying, installing or using the software you agree to this license.
 //  If you do not agree to this license, do not download, install,
 //  copy or use the software.
-//
+//CID_BR
 //
 //                        Intel License Agreement
 //                For Open Source Computer Vision Library
@@ -230,6 +230,8 @@ make & enjoy!
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+
+#include <iostream>
 
 #ifdef HAVE_CAMV4L2
 #include <asm/types.h>          /* for videodev2.h */
@@ -335,6 +337,7 @@ typedef struct CvCaptureCAM_V4L
    int v4l2_hue, v4l2_hue_min, v4l2_hue_max;
    int v4l2_gain, v4l2_gain_min, v4l2_gain_max;
    int v4l2_exposure, v4l2_exposure_min, v4l2_exposure_max;
+   int v4l2_exposure_auto, v4l2_exposure_auto_min, v4l2_exposure_auto_max;
 
 #endif /* HAVE_CAMV4L2 */
 
@@ -415,18 +418,37 @@ try_palette(int fd,
 
 #ifdef HAVE_CAMV4L2
 
-static int try_palette_v4l2(CvCaptureCAM_V4L* capture, unsigned long colorspace)
+static int try_palette_v4l2(CvCaptureCAM_V4L* capture, unsigned long colorspace, int width=-1, int height=-1, double fps=-1)
 {
-  CLEAR (capture->form);
+  //CLEAR (capture->form);
 
   capture->form.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   capture->form.fmt.pix.pixelformat = colorspace;
   capture->form.fmt.pix.field       = V4L2_FIELD_ANY;
-  capture->form.fmt.pix.width = DEFAULT_V4L_WIDTH;
-  capture->form.fmt.pix.height = DEFAULT_V4L_HEIGHT;
+  capture->form.fmt.pix.width = width;
+  capture->form.fmt.pix.height = height;
 
+
+if (width!=-1 && height != -1)
+{
+//everytime S_FMT is called the timeperframe is reset to 30
   if (-1 == ioctl (capture->deviceHandle, VIDIOC_S_FMT, &capture->form))
       return -1;
+}
+
+if (fps!=-1)
+{
+    /* try to set framerate to 30 fps */
+    struct v4l2_streamparm setfps;
+    memset (&setfps, 0, sizeof(struct v4l2_streamparm));
+    setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    setfps.parm.capture.timeperframe.numerator = 1;
+    setfps.parm.capture.timeperframe.denominator = fps;
+    ioctl (capture->deviceHandle, VIDIOC_S_PARM, &setfps);
+}
+
+
+
 
 
   if (colorspace != capture->form.fmt.pix.pixelformat)
@@ -540,51 +562,51 @@ static int try_init_v4l2(CvCaptureCAM_V4L* capture, char *deviceName)
 
 }
 
-static int autosetup_capture_mode_v4l2(CvCaptureCAM_V4L* capture)
+static int autosetup_capture_mode_v4l2(CvCaptureCAM_V4L* capture, int width=-1, int height=-1, double fps=-1)
 {
-  if (try_palette_v4l2(capture, V4L2_PIX_FMT_BGR24) == 0)
+  if (try_palette_v4l2(capture, V4L2_PIX_FMT_BGR24, width, height, fps) == 0)
   {
     capture->palette = PALETTE_BGR24;
   }
   else
-  if (try_palette_v4l2(capture, V4L2_PIX_FMT_YVU420) == 0)
+  if (try_palette_v4l2(capture, V4L2_PIX_FMT_YVU420, width, height, fps) == 0)
   {
     capture->palette = PALETTE_YVU420;
   }
   else
-  if (try_palette_v4l2(capture, V4L2_PIX_FMT_YUV411P) == 0)
+  if (try_palette_v4l2(capture, V4L2_PIX_FMT_YUV411P, width, height, fps) == 0)
   {
     capture->palette = PALETTE_YUV411P;
   }
   else
 
 #ifdef HAVE_JPEG
-  if (try_palette_v4l2(capture, V4L2_PIX_FMT_MJPEG) == 0 ||
-      try_palette_v4l2(capture, V4L2_PIX_FMT_JPEG) == 0)
+  if (try_palette_v4l2(capture, V4L2_PIX_FMT_MJPEG, width, height, fps) == 0 ||
+      try_palette_v4l2(capture, V4L2_PIX_FMT_JPEG, width, height, fps) == 0)
   {
     capture->palette = PALETTE_MJPEG;
   }
   else
 #endif
 
-  if (try_palette_v4l2(capture, V4L2_PIX_FMT_YUYV) == 0)
+  if (try_palette_v4l2(capture, V4L2_PIX_FMT_YUYV, width, height, fps) == 0)
   {
     capture->palette = PALETTE_YUYV;
   }
-  else if (try_palette_v4l2(capture, V4L2_PIX_FMT_UYVY) == 0)
+  else if (try_palette_v4l2(capture, V4L2_PIX_FMT_UYVY, width, height, fps) == 0)
   {
     capture->palette = PALETTE_UYVY;
   }
   else
-  if (try_palette_v4l2(capture, V4L2_PIX_FMT_SN9C10X) == 0)
+  if (try_palette_v4l2(capture, V4L2_PIX_FMT_SN9C10X, width, height, fps) == 0)
   {
     capture->palette = PALETTE_SN9C10X;
   } else
-  if (try_palette_v4l2(capture, V4L2_PIX_FMT_SBGGR8) == 0)
+  if (try_palette_v4l2(capture, V4L2_PIX_FMT_SBGGR8, width, height, fps) == 0)
   {
     capture->palette = PALETTE_SBGGR8;
   } else
-  if (try_palette_v4l2(capture, V4L2_PIX_FMT_SGBRG) == 0)
+  if (try_palette_v4l2(capture, V4L2_PIX_FMT_SGBRG, width, height, fps) == 0)
   {
     capture->palette = PALETTE_SGBRG;
   }
@@ -667,6 +689,8 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture)
         capture->v4l2_brightness = 1;
         capture->v4l2_brightness_min = capture->queryctrl.minimum;
         capture->v4l2_brightness_max = capture->queryctrl.maximum;
+
+
       }
 
       if (capture->queryctrl.id == V4L2_CID_CONTRAST)
@@ -681,6 +705,7 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture)
         capture->v4l2_saturation = 1;
         capture->v4l2_saturation_min = capture->queryctrl.minimum;
         capture->v4l2_saturation_max = capture->queryctrl.maximum;
+
       }
 
       if (capture->queryctrl.id == V4L2_CID_HUE)
@@ -702,6 +727,19 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture)
         capture->v4l2_exposure = 1;
         capture->v4l2_exposure_min = capture->queryctrl.minimum;
         capture->v4l2_exposure_max = capture->queryctrl.maximum;
+      }
+
+      if (capture->queryctrl.id == V4L2_CID_EXPOSURE_ABSOLUTE)
+      {
+        capture->v4l2_exposure = 1;
+        capture->v4l2_exposure_min = capture->queryctrl.minimum;
+        capture->v4l2_exposure_max = capture->queryctrl.maximum;
+      }
+      if (capture->queryctrl.id == V4L2_CID_EXPOSURE_AUTO)
+      {
+        capture->v4l2_exposure_auto = 1;
+        capture->v4l2_exposure_auto_min = 1;
+        capture->v4l2_exposure_auto_max = 3;
       }
 
 
@@ -772,6 +810,19 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture)
         capture->v4l2_exposure_max = capture->queryctrl.maximum;
       }
 
+      if (capture->queryctrl.id == V4L2_CID_EXPOSURE_ABSOLUTE)
+      {
+        capture->v4l2_exposure = 1;
+        capture->v4l2_exposure_min = capture->queryctrl.minimum;
+        capture->v4l2_exposure_max = capture->queryctrl.maximum;
+      }
+      if (capture->queryctrl.id == V4L2_CID_EXPOSURE_AUTO)
+      {
+        capture->v4l2_exposure = 1;
+        capture->v4l2_exposure_auto_min = 1; //manual
+        capture->v4l2_exposure_auto_max = 3; //auto aperture exposure control
+      }
+
     } else {
 
       if (errno == EINVAL)
@@ -785,14 +836,14 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture)
 
 }
 
-static int _capture_V4L2 (CvCaptureCAM_V4L *capture, char *deviceName)
+static int _capture_V4L2 (CvCaptureCAM_V4L *capture, char *deviceName,int width=-1, int height=-1, double fps=-1)
 {
    int detect_v4l2 = 0;
 
    detect_v4l2 = try_init_v4l2(capture, deviceName);
 
    if (detect_v4l2 != 1) {
-       /* init of the v4l2 device is not OK */
+       /* init of the v4l2 device is not OK */ 
        return -1;
    }
 
@@ -868,10 +919,10 @@ static int _capture_V4L2 (CvCaptureCAM_V4L *capture, char *deviceName)
    {
    }
 
-   if (autosetup_capture_mode_v4l2(capture) == -1)
+   if (autosetup_capture_mode_v4l2(capture, width, height, fps) == -1) //sets window and frame size
        return -1;
 
-   icvSetVideoSize(capture, DEFAULT_V4L_WIDTH, DEFAULT_V4L_HEIGHT);
+   //icvSetVideoSize(capture, DEFAULT_V4L_WIDTH, DEFAULT_V4L_HEIGHT);
 
    unsigned int min;
 
@@ -1101,7 +1152,7 @@ static int _capture_V4L (CvCaptureCAM_V4L *capture, char *deviceName)
 
 #endif /* HAVE_CAMV4L */
 
-static CvCaptureCAM_V4L * icvCaptureFromCAM_V4L (int index)
+static CvCaptureCAM_V4L * icvCaptureFromCAM_V4L (int index, int width=-1, int height=-1, double fps=-1)
 {
    static int autoindex;
    autoindex = 0;
@@ -1144,9 +1195,8 @@ static CvCaptureCAM_V4L * icvCaptureFromCAM_V4L (int index)
    /* Present the routines needed for V4L funtionality.  They are inserted as part of
       the standard set of cv calls promoting transparency.  "Vector Table" insertion. */
    capture->FirstCapture = 1;
-
-#ifdef HAVE_CAMV4L2
-   if (_capture_V4L2 (capture, deviceName) == -1) {
+#ifdef HAVE_CAMV4L2  //calls fmt and sets device frame and fps
+   if (_capture_V4L2 (capture, deviceName, width, height, fps) == -1) {
        icvCloseCAM_V4L(capture);
        V4L2_SUPPORT = 0;
 #endif  /* HAVE_CAMV4L2 */
@@ -2294,6 +2344,8 @@ static double icvGetPropertyCAM_V4L (CvCaptureCAM_V4L* capture,
           return capture->form.fmt.pix.width;
       case CV_CAP_PROP_FRAME_HEIGHT:
           return capture->form.fmt.pix.height;
+      case CV_CAP_PROP_DEVICE_HANDLE:
+	return capture->deviceHandle;	
       }
 
       /* initialize the control structure */
@@ -2324,6 +2376,12 @@ static double icvGetPropertyCAM_V4L (CvCaptureCAM_V4L* capture,
       case CV_CAP_PROP_EXPOSURE:
           capture->control.id = V4L2_CID_EXPOSURE;
           break;
+      case CV_CAP_PROP_EXPOSURE_AUTO:
+          capture->control.id = V4L2_CID_EXPOSURE_AUTO;
+          break;
+      case CV_CAP_PROP_EXPOSURE_ABSOLUTE:
+          capture->control.id = V4L2_CID_EXPOSURE_ABSOLUTE;
+          break;
       default:
         fprintf(stderr,
                 "HIGHGUI ERROR: V4L2: getting property #%d is not supported\n",
@@ -2353,6 +2411,12 @@ static double icvGetPropertyCAM_V4L (CvCaptureCAM_V4L* capture,
               break;
           case CV_CAP_PROP_EXPOSURE:
               fprintf (stderr, "Exposure");
+              break;
+          case CV_CAP_PROP_EXPOSURE_AUTO:
+              fprintf (stderr, "Exposure Auto");
+              break;
+          case CV_CAP_PROP_EXPOSURE_ABSOLUTE:
+              fprintf (stderr, "Exposure Absolute");
               break;
           }
           fprintf (stderr, " is not supported by your device\n");
@@ -2387,6 +2451,14 @@ static double icvGetPropertyCAM_V4L (CvCaptureCAM_V4L* capture,
           v4l2_min = capture->v4l2_exposure_min;
           v4l2_max = capture->v4l2_exposure_max;
           break;
+      case CV_CAP_PROP_EXPOSURE_ABSOLUTE:
+          v4l2_min = capture->v4l2_exposure_min;
+          v4l2_max = capture->v4l2_exposure_max;
+          break;
+      case CV_CAP_PROP_EXPOSURE_AUTO:
+          v4l2_min = 1;
+          v4l2_max = 3;
+	  break;
       }
 
       /* all was OK, so convert to 0.0 - 1.0 range, and return the value */
@@ -2430,6 +2502,9 @@ static double icvGetPropertyCAM_V4L (CvCaptureCAM_V4L* capture,
     case CV_CAP_PROP_HUE:
         retval = capture->imageProperties.hue;
         break;
+    case CV_CAP_PROP_DEVICE_HANDLE:
+	retval = capture->deviceHandle;
+	break;	
     case CV_CAP_PROP_GAIN:
         fprintf(stderr,
                 "HIGHGUI ERROR: V4L: Gain control in V4L is not supported\n");
@@ -2466,6 +2541,7 @@ static int icvSetVideoSize( CvCaptureCAM_V4L* capture, int w, int h) {
   if (V4L2_SUPPORT == 1)
   {
 
+
     CLEAR (capture->cropcap);
     capture->cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -2477,54 +2553,64 @@ static int icvSetVideoSize( CvCaptureCAM_V4L* capture, int w, int h) {
         capture->crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         capture->crop.c= capture->cropcap.defrect;
 
-        /* set the crop area, but don't exit if the device don't support croping */
-        if (ioctl (capture->deviceHandle, VIDIOC_S_CROP, &capture->crop) < 0) {
-            fprintf(stderr, "HIGHGUI ERROR: V4L/V4L2: VIDIOC_S_CROP\n");
-        }
-    }
+        // set the crop area, but don't exit if the device don't support croping
+        //if (ioctl (capture->deviceHandle, VIDIOC_S_CROP, &capture->crop) > 0) {
+        //    fprintf(stderr, "HIGHGUI ERROR: V4L/V4L2: VIDIOC_S_CROP\n");
 
+        //}
+    }
+ 
     CLEAR (capture->form);
-    capture->form.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    //capture->form.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
     /* read the current setting, mainly to retreive the pixelformat information */
-    ioctl (capture->deviceHandle, VIDIOC_G_FMT, &capture->form);
+  //  ioctl (capture->deviceHandle, VIDIOC_G_FMT, &capture->form);
 
     /* set the values we want to change */
+    //capture->form.fmt.pix.width = w;
+    //capture->form.fmt.pix.height = h;
+    //capture->form.fmt.win.chromakey = 0;
+    //capture->form.fmt.win.field = V4L2_FIELD_ANY;
+    //capture->form.fmt.win.clips = 0;
+    //capture->form.fmt.win.clipcount = 0;
+    //capture->form.fmt.pix.field = V4L2_FIELD_ANY;
+
+	//change size
+    capture->form.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     capture->form.fmt.pix.width = w;
     capture->form.fmt.pix.height = h;
-    capture->form.fmt.win.chromakey = 0;
-    capture->form.fmt.win.field = V4L2_FIELD_ANY;
-    capture->form.fmt.win.clips = 0;
-    capture->form.fmt.win.clipcount = 0;
-    capture->form.fmt.pix.field = V4L2_FIELD_ANY;
+    capture->form.fmt.pix.field = V4L2_FIELD_NONE;
+
 
     /* ask the device to change the size
      * don't test if the set of the size is ok, because some device
      * don't allow changing the size, and we will get the real size
      * later */
-    ioctl (capture->deviceHandle, VIDIOC_S_FMT, &capture->form);
+    if (-1 == ioctl (capture->deviceHandle, VIDIOC_S_FMT, &capture->form))
+	fprintf(stderr, "HIGHGUI ERROR: V4L/V4L2: Could Not Format Frame Size.\n\n");
 
     /* try to set framerate to 30 fps */
-    struct v4l2_streamparm setfps;
-    memset (&setfps, 0, sizeof(struct v4l2_streamparm));
-    setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    setfps.parm.capture.timeperframe.numerator = 1;
-    setfps.parm.capture.timeperframe.denominator = 30;
-    ioctl (capture->deviceHandle, VIDIOC_S_PARM, &setfps);
+    //struct v4l2_streamparm setfps;
+    //memset (&setfps, 0, sizeof(struct v4l2_streamparm));
+    //setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    //setfps.parm.capture.timeperframe.numerator = 1;
+    //setfps.parm.capture.timeperframe.denominator = 20;
+    //ioctl (capture->deviceHandle, VIDIOC_S_PARM, &setfps);
 
     /* we need to re-initialize some things, like buffers, because the size has
      * changed */
     capture->FirstCapture = 1;
 
+
     /* Get window info again, to get the real value */
-    if (-1 == ioctl (capture->deviceHandle, VIDIOC_G_FMT, &capture->form))
-    {
-      fprintf(stderr, "HIGHGUI ERROR: V4L/V4L2: Could not obtain specifics of capture window.\n\n");
+    //if (-1 == ioctl (capture->deviceHandle, VIDIOC_G_FMT, &capture->form))
+    //{
+      
 
-      icvCloseCAM_V4L(capture);
+      //icvCloseCAM_V4L(capture);
 
-      return 0;
-    }
+      //return 0;
+    //}
 
     return 0;
 
@@ -2535,6 +2621,7 @@ static int icvSetVideoSize( CvCaptureCAM_V4L* capture, int w, int h) {
 #endif /* HAVE_CAMV4L && HAVE_CAMV4L2 */
 #ifdef HAVE_CAMV4L
   {
+
 
     if (capture==0) return 0;
      if (w>capture->capability.maxwidth) {
@@ -2609,6 +2696,31 @@ static int icvSetControl (CvCaptureCAM_V4L* capture,
     case CV_CAP_PROP_EXPOSURE:
         capture->control.id = V4L2_CID_EXPOSURE;
         break;
+    case CV_CAP_PROP_EXPOSURE_AUTO: //this is a menu item so we set it and end method here
+        capture->control.id = V4L2_CID_EXPOSURE_AUTO;
+//	capture->control.value = (int)value;
+    
+//	if (-1 == ioctl (capture->deviceHandle, VIDIOC_S_CTRL, &capture->control) && errno != ERANGE) 
+//	{
+//	        perror ("HIGHGUI ERROR: V4L2: setting property EXPOSURE_AUTO");
+//	        return -1;
+//	}
+
+//	return 0; //all is ok, end method
+
+        break;
+    case CV_CAP_PROP_EXPOSURE_ABSOLUTE:
+	//need to put Exposure in manual mode first
+	capture->control.id = V4L2_CID_EXPOSURE_AUTO;
+	capture->control.value = 1;
+    
+        if (-1 == ioctl (capture->deviceHandle,VIDIOC_S_CTRL, &capture->control) && errno != ERANGE)
+        	perror ("VIDIOC_S_CTRL");
+	
+	//now we allow exposure absolute to be set
+        capture->control.id = V4L2_CID_EXPOSURE_ABSOLUTE;
+        break;
+
     default:
         fprintf(stderr,
                 "HIGHGUI ERROR: V4L2: setting property #%d is not supported\n",
@@ -2650,6 +2762,14 @@ static int icvSetControl (CvCaptureCAM_V4L* capture,
         v4l2_min = capture->v4l2_exposure_min;
         v4l2_max = capture->v4l2_exposure_max;
         break;
+    case CV_CAP_PROP_EXPOSURE_ABSOLUTE:
+        v4l2_min = capture->v4l2_exposure_min;
+        v4l2_max = capture->v4l2_exposure_max;
+        break;
+    case CV_CAP_PROP_EXPOSURE_AUTO:
+        v4l2_min = 1;
+        v4l2_max = 3;
+        break;
     }
 
     /* initialisations */
@@ -2675,6 +2795,12 @@ static int icvSetControl (CvCaptureCAM_V4L* capture,
         break;
     case CV_CAP_PROP_EXPOSURE:
         capture->control.id = V4L2_CID_EXPOSURE;
+        break;
+    case CV_CAP_PROP_EXPOSURE_ABSOLUTE:
+        capture->control.id = V4L2_CID_EXPOSURE_ABSOLUTE;
+        break;
+    case CV_CAP_PROP_EXPOSURE_AUTO:
+        capture->control.id = V4L2_CID_EXPOSURE_AUTO;
         break;
     default:
         fprintf(stderr,
@@ -2751,11 +2877,12 @@ static int icvSetControl (CvCaptureCAM_V4L* capture,
 
 static int icvSetPropertyCAM_V4L( CvCaptureCAM_V4L* capture,
                                   int property_id, double value ){
-    static int width = 0, height = 0;
+    static int width, height;
     int retval;
 
     /* initialization */
     retval = 0;
+
 
     /* two subsequent calls setting WIDTH and HEIGHT will change
        the video size */
@@ -2764,16 +2891,28 @@ static int icvSetPropertyCAM_V4L( CvCaptureCAM_V4L* capture,
     switch (property_id) {
     case CV_CAP_PROP_FRAME_WIDTH:
         width = cvRound(value);
-        if(width !=0 && height != 0) {
+
+        //if(width !=0 && height != 0) {
             retval = icvSetVideoSize( capture, width, height);
-            width = height = 0;
-        }
+            //width = height = 0;
+        //}
         break;
     case CV_CAP_PROP_FRAME_HEIGHT:
         height = cvRound(value);
-        if(width !=0 && height != 0) {
+        //if(width !=0 && height != 0) {
             retval = icvSetVideoSize( capture, width, height);
-            width = height = 0;
+            //width = height = 0;
+        //}
+        break;
+    case CV_CAP_PROP_FPS:
+        struct v4l2_streamparm setfps;
+        memset (&setfps, 0, sizeof(struct v4l2_streamparm));
+        setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        setfps.parm.capture.timeperframe.numerator = 1;
+        setfps.parm.capture.timeperframe.denominator = value;
+        if (ioctl (capture->deviceHandle, VIDIOC_S_PARM, &setfps) < 0){
+            fprintf(stderr, "HIGHGUI ERROR: V4L: Unable to set camera FPS\n");
+            retval=0;
         }
         break;
     case CV_CAP_PROP_BRIGHTNESS:
@@ -2782,6 +2921,8 @@ static int icvSetPropertyCAM_V4L( CvCaptureCAM_V4L* capture,
     case CV_CAP_PROP_HUE:
     case CV_CAP_PROP_GAIN:
     case CV_CAP_PROP_EXPOSURE:
+    case CV_CAP_PROP_EXPOSURE_AUTO:
+    case CV_CAP_PROP_EXPOSURE_ABSOLUTE:
         retval = icvSetControl(capture, property_id, value);
         break;
     default:
@@ -2853,7 +2994,7 @@ public:
     CvCaptureCAM_V4L_CPP() { captureV4L = 0; }
     virtual ~CvCaptureCAM_V4L_CPP() { close(); }
 
-    virtual bool open( int index );
+    virtual bool open( int index, int width=-1, int height=-1, double fps=-1 );
     virtual void close();
 
     virtual double getProperty(int);
@@ -2865,10 +3006,10 @@ protected:
     CvCaptureCAM_V4L* captureV4L;
 };
 
-bool CvCaptureCAM_V4L_CPP::open( int index )
+bool CvCaptureCAM_V4L_CPP::open( int index, int width, int height, double fps)
 {
     close();
-    captureV4L = icvCaptureFromCAM_V4L(index);
+    captureV4L = icvCaptureFromCAM_V4L(index, width, height, fps);
     return captureV4L != 0;
 }
 
@@ -2901,11 +3042,11 @@ bool CvCaptureCAM_V4L_CPP::setProperty( int propId, double value )
     return captureV4L ? icvSetPropertyCAM_V4L( captureV4L, propId, value ) != 0 : false;
 }
 
-CvCapture* cvCreateCameraCapture_V4L( int index )
+CvCapture* cvCreateCameraCapture_V4L( int index, int width, int height, double fps )
 {
     CvCaptureCAM_V4L_CPP* capture = new CvCaptureCAM_V4L_CPP;
 
-    if( capture->open( index ))
+    if( capture->open( index, width, height, fps ))
         return (CvCapture*)capture;
 
     delete capture;

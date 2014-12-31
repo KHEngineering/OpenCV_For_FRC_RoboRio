@@ -110,7 +110,7 @@ CV_IMPL int cvGetCaptureDomain( CvCapture* capture)
  * API that can access a given camera index.
  * Add multiples of 100 to select an API.
  */
-CV_IMPL CvCapture * cvCreateCameraCapture (int index)
+CV_IMPL CvCapture * cvCreateCameraCapture (int index, int width, int height, double fps)
 {
     int  domains[] =
     {
@@ -232,7 +232,7 @@ CV_IMPL CvCapture * cvCreateCameraCapture (int index)
                 return capture;
 #endif
 #if defined HAVE_LIBV4L || defined HAVE_CAMV4L || defined HAVE_CAMV4L2 || defined HAVE_VIDEOIO
-            capture = cvCreateCameraCapture_V4L (index);
+            capture = cvCreateCameraCapture_V4L (index, width, height, fps);
             if (capture)
                 return capture;
 #endif
@@ -524,10 +524,10 @@ bool VideoCapture::open(const string& filename)
     return isOpened();
 }
 
-bool VideoCapture::open(int device)
+bool VideoCapture::open(int device, int width, int height, double fps)
 {
     if (isOpened()) release();
-    cap = cvCreateCameraCapture(device);
+    cap = cvCreateCameraCapture(device, width, height, fps);
     return isOpened();
 }
 

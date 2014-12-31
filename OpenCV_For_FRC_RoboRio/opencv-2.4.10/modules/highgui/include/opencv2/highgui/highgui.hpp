@@ -210,7 +210,7 @@ public:
 
     virtual ~VideoCapture();
     CV_WRAP virtual bool open(const string& filename);
-    CV_WRAP virtual bool open(int device);
+    CV_WRAP virtual bool open(int device, int width=-1, int height=-1, double fps=-1);
     CV_WRAP virtual bool isOpened() const;
     CV_WRAP virtual void release();
 
